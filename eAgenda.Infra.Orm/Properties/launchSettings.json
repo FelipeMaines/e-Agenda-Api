@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "eAgenda.Infra.Orm": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:56372;http://localhost:56383"
+    }
+  }
+}

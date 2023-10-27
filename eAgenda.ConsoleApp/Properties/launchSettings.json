@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "eAgenda.ConsoleApp": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:56374;http://localhost:56379"
+    }
+  }
+}
