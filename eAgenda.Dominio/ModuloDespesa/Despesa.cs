@@ -12,6 +12,15 @@ namespace eAgenda.Dominio.ModuloDespesa
             Categorias = new List<Categoria>();
         }
 
+        public Despesa(string descricao, decimal valor, DateTime data, FormaPgtoDespesaEnum formaPagamento, List<Categoria> categorias)
+        {
+            Descricao = descricao;
+            Valor = valor;
+            Data = data;
+            FormaPagamento = formaPagamento;
+            Categorias = categorias;
+        }
+
         public string Descricao { get; set; }
 
         public decimal Valor { get; set; }
@@ -21,6 +30,17 @@ namespace eAgenda.Dominio.ModuloDespesa
         public FormaPgtoDespesaEnum FormaPagamento { get; set; }
 
         public List<Categoria> Categorias { get; set; }
+
+        public Despesa(Guid id ,string descricao, decimal valor, DateTime data, FormaPgtoDespesaEnum formaPagamento)
+        {
+            Id = id;
+            Descricao = descricao;
+            Valor = valor;
+            Data = data;
+            FormaPagamento = formaPagamento;
+        }
+
+        
 
         public override void Atualizar(Despesa registro)
         {

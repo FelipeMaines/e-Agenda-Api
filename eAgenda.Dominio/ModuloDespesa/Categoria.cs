@@ -11,6 +11,19 @@ namespace eAgenda.Dominio.ModuloDespesa
             Despesas = new List<Despesa>();
         }
 
+        public Categoria(string titulo, List<Despesa> despesas)
+        {
+            Titulo = titulo;
+            Despesas = despesas;
+        }
+
+        public Categoria(Guid id, string titulo, List<Despesa> despesas)
+        {
+            this.Id = id;
+            Titulo = titulo;
+            Despesas = despesas;
+        }
+
         public string Titulo { get; set; }
 
         public List<Despesa> Despesas { get; set; }

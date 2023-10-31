@@ -11,6 +11,7 @@ namespace eAgenda.Dominio.ModuloCompromisso
         private TipoLocalizacaoCompromissoEnum _compromissoEnum;
         private Contato _contato;
 
+       
         public Compromisso()
         {
             Data = DateTime.Now;
