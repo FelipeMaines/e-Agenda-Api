@@ -70,7 +70,7 @@ namespace WebApplication1.Controllers.ModuloCompromisso
         {
             var compromisso = servicoCompromisso.SelecionarPorId(id).Value;
 
-           var compromissoView = new VizualarCompromissoViewModel
+            var compromissoView = new VizualarCompromissoViewModel
             {
                 Assunto = compromisso.Assunto,
                 Data = compromisso.Data,
@@ -103,7 +103,7 @@ namespace WebApplication1.Controllers.ModuloCompromisso
 
             var result = servicoCompromisso.Inserir(compromisso);
 
-            if(result.IsFailed)
+            if (result.IsFailed)
             {
                 string[] erros = result.Errors.Select(e => e.Message).ToArray();
                 return string.Join("\r\n", erros);
@@ -135,7 +135,7 @@ namespace WebApplication1.Controllers.ModuloCompromisso
         }
 
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public string Excluir(Guid id)
         {
             var resultadoBusca = servicoCompromisso.SelecionarPorId(id);

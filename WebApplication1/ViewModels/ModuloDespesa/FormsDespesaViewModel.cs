@@ -2,9 +2,9 @@
 
 namespace WebApplication1.ViewModels.ModuloDespesa
 {
-    public class InserirDespesaViewModel
+    public class FormsDespesaViewModel
     {
-        public InserirDespesaViewModel(string descricao, decimal valor, DateTime data, FormaPgtoDespesaEnum formaPagamento, Guid[] categorias)
+        public FormsDespesaViewModel(string descricao, decimal valor, DateTime data, FormaPgtoDespesaEnum formaPagamento, Guid[] categorias)
         {
             Descricao = descricao;
             Valor = valor;

@@ -23,6 +23,15 @@ namespace eAgenda.Dominio.ModuloTarefa
             DataConclusao = null;
         }
 
+        public Tarefa(List<ItemTarefa> itens, string titulo, PrioridadeTarefaEnum prioridade) : base()
+        {
+            this.itens = itens;
+            Titulo = titulo;
+            Prioridade = prioridade;
+            DataConclusao = null;
+            DataCriacao = DateTime.Now;
+        }
+
         public string Titulo { get; set; }
 
         public PrioridadeTarefaEnum Prioridade { get; set; }
@@ -30,6 +39,8 @@ namespace eAgenda.Dominio.ModuloTarefa
         public DateTime? DataConclusao { get; set; }
         public List<ItemTarefa> Itens { get { return itens; } }
         public decimal PercentualConcluido { get; set; }
+
+
 
         public void CalcularPercentualConcluido()
         {
@@ -112,7 +123,7 @@ namespace eAgenda.Dominio.ModuloTarefa
 
         public override void Atualizar(Tarefa registro)
         {
-            Id = registro.Id;
+            
             Titulo = registro.Titulo;
             Prioridade = registro.Prioridade;
         }

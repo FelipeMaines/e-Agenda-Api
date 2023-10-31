@@ -12,6 +12,7 @@ using eAgenda.Infra.Orm.ModuloDespesa;
 using WebApplication1.ViewModels.ModuloDespesa;
 using eAgenda.Dominio.ModuloDespesa;
 using WebApplication1.ViewModels.ModuloCategoria;
+using System.Reflection.Metadata.Ecma335;
 
 namespace WebApplication1.Controllers.ModuloDespesa
 {
@@ -64,20 +65,27 @@ namespace WebApplication1.Controllers.ModuloDespesa
         }
 
         [HttpGet("{id}")]
-        public List<ListarDespesaViewModel> SelecionarPorId(Guid id)
+        public VisualizarDespesaViewModel SelecionarPorId(Guid id)
         {
             var despesa = servicoDespesa.SelecionarPorId(id).Value;
 
+            var categorias = new List<ListarCategoriaViewModel>();
+
+            foreach(var cate in despesa.Categorias)
+            {
+                categorias.Add(new ListarCategoriaViewModel(cate.Titulo, cate.Id));
+            }
+
             var despesasView = new List<ListarDespesaViewModel>();
 
-            var despesView = new InserirDespesaViewModel(despesa.Descricao, despesa.Valor, despesa.Data,
-               despesa.FormaPagamento, despesa.Categorias.Select(categoria => categoria.Id).ToArray());
+            var despesView = new VisualizarDespesaViewModel(id,despesa.Descricao, despesa.Valor, despesa.Data,
+               despesa.FormaPagamento, categorias);
 
-            return despesasView;
+            return despesView;
         }
 
         [HttpPost]
-       public string Inserir(InserirDespesaViewModel despesaView)
+       public string Inserir(FormsDespesaViewModel despesaView)
         {
             List<Categoria> categorias = despesaView.Categorias.Select(id => servicoCategoria.SelecionarPorId(id).Value).ToList();
 
@@ -97,8 +105,8 @@ namespace WebApplication1.Controllers.ModuloDespesa
             return "Inserido com sucesso";
         }
 
-        [HttpPut]
-        public string Editar(Guid id,InserirDespesaViewModel despesaView)
+        [HttpPut("{id}")]
+        public string Editar(Guid id,FormsDespesaViewModel despesaView)
         {
             var despesa = servicoDespesa.SelecionarPorId(id).Value;
 
@@ -120,6 +128,26 @@ namespace WebApplication1.Controllers.ModuloDespesa
             }
 
             return "Editado com sucesso";
+        }
+
+        [HttpDelete("{id}")]
+        public string Excluir(Guid id)
+        {
+            var despesa = servicoDespesa.SelecionarPorId(id).Value;
+
+            var result = servicoDespesa.Excluir(despesa);
+
+            var erros = new List<string>();
+
+            if (result.IsFailed)
+            {
+                erros = result.Errors.Select(x => x.Message).ToList();
+
+                return string.Format("\r\n", erros);
+            }
+
+            else
+                return "Excluido com sucesso!";
         }
     }
 }
