@@ -1,9 +1,12 @@
-﻿using eAgenda.Aplicacao.ModuloContato;
+﻿using AutoMapper;
+using eAgenda.Aplicacao.ModuloContato;
+using eAgenda.Dominio.ModuloCompromisso;
 using eAgenda.Dominio.ModuloContato;
 using eAgenda.Infra.Orm;
 using eAgenda.Infra.Orm.ModuloContato;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WebApplication1.Config.AutoMapperConfig;
 using WebApplication1.ViewModels.ModuloContato;
 
 namespace WebApplication1.Controllers
@@ -13,24 +16,28 @@ namespace WebApplication1.Controllers
     public partial class ContatoController : ControllerBase
     {
         private ServicoContato servicoContato;
-        public ContatoController()
+        private IMapper mapeador;
+        public ContatoController(ServicoContato servicoContato, IMapper mapeador)
         {
-            IConfiguration configuracao = new ConfigurationBuilder()
-              .SetBasePath(Directory.GetCurrentDirectory())
-              .AddJsonFile("appsettings.json")
-              .Build();
+            //IConfiguration configuracao = new ConfigurationBuilder()
+            //  .SetBasePath(Directory.GetCurrentDirectory())
+            //  .AddJsonFile("appsettings.json")
+            //  .Build();
 
-            var connectionString = configuracao.GetConnectionString("SqlServer");
+            //var connectionString = configuracao.GetConnectionString("SqlServer");
 
-            var builder = new DbContextOptionsBuilder<eAgendaDbContext>();
+            //var builder = new DbContextOptionsBuilder<eAgendaDbContext>();
 
-            builder.UseSqlServer(connectionString);
+            //builder.UseSqlServer(connectionString);
 
-            var contextoPersistencia = new eAgendaDbContext(builder.Options);
+            //var contextoPersistencia = new eAgendaDbContext(builder.Options);
 
-            var repositorioContato = new RepositorioContatoOrm(contextoPersistencia);
+            //var repositorioContato = new RepositorioContatoOrm(contextoPersistencia);
 
-            servicoContato = new ServicoContato(repositorioContato, contextoPersistencia);
+            //servicoContato = new ServicoContato(repositorioContato, contextoPersistencia);
+
+            this.servicoContato = servicoContato;
+            this.mapeador = mapeador;
         }
 
         [HttpGet]
@@ -38,25 +45,7 @@ namespace WebApplication1.Controllers
         {
             var contatos = servicoContato.SelecionarTodos(status).Value;
 
-            var contatosViewModel = new List<ListarContatoViewModel>();
-
-            foreach(var contato in contatos)
-            {
-                var contatoViewModel = new ListarContatoViewModel
-                {
-                    Id = contato.Id,
-                    Nome = contato.Nome,
-                    Email = contato.Email,
-                    Telefone = contato.Telefone,
-                    Empresa = contato.Empresa,
-                    Cargo = contato.Cargo
-                };
-
-                contatosViewModel.Add(contatoViewModel);
-            }
-
-
-            return contatosViewModel;
+            return mapeador.Map<List<ListarContatoViewModel>>(contatos);
         }
 
         [HttpGet("visualizacao-completa/{id}")]
@@ -64,41 +53,15 @@ namespace WebApplication1.Controllers
         {
             var contato = servicoContato.SelecionarPorId(id).Value;
 
-            var compromissos = new List<ListarCompromissoViewModel>();
+            var contatoViewModel = mapeador.Map<VisualizarContatoViewModel>(contato);
 
-            foreach (var compromisso in contato.Compromissos)
-            {
-                compromissos.Add(new ListarCompromissoViewModel
-                {
-                    Id = compromisso.Id,
-                    Assunto = compromisso.Assunto,
-                    Data = compromisso.Data,
-                    HoraInicio = compromisso.HoraInicio,
-                    HoraTermino = compromisso.HoraTermino
-                });
-            }
-
-            return new VisualizarContatoViewModel
-            {
-                Id = contato.Id,
-                Nome = contato.Nome,
-                Email = contato.Email,
-                Telefone = contato.Telefone,
-                Empresa = contato.Empresa,
-                Cargo = contato.Cargo,
-                Compromissos = compromissos
-            };
+            return contatoViewModel;
         }
 
         [HttpPost]
         public string Inserir(InserirContatoViewModel contatoViewModel)
         {
-            var contato = new Contato(
-                contatoViewModel.Nome,
-                contatoViewModel.Email,
-                contatoViewModel.Telefone,
-                contatoViewModel.Empresa,
-                contatoViewModel.Cargo);
+            var contato = mapeador.Map<Contato>(contatoViewModel);
 
             var resultado = servicoContato.Inserir(contato);
 
@@ -111,17 +74,13 @@ namespace WebApplication1.Controllers
         }
 
         [HttpPut("{id}")]
-        public string Editar(Guid id, EditarContatoViewModel contatoViewModel)
+        public string Editar(Guid id, InserirContatoViewModel contatoViewModel)
         {
-            var contato = servicoContato.SelecionarPorId(id).Value;
+            var contatoEncontrado = servicoContato.SelecionarPorId(id).Value;
 
-            contato.Nome = contatoViewModel.Nome;
-            contato.Email = contatoViewModel.Email;
-            contato.Telefone = contatoViewModel.Telefone;
-            contato.Cargo = contatoViewModel.Cargo;
-            contato.Empresa = contatoViewModel.Empresa;
+            var contatoAlterado = mapeador.Map(contatoViewModel, contatoEncontrado);
 
-            var resultado = servicoContato.Editar(contato);
+            var resultado = servicoContato.Editar(contatoAlterado);
 
             if (resultado.IsSuccess)
                 return "Contato editado com sucesso!";
