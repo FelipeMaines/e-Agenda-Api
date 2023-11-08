@@ -21,42 +21,30 @@ namespace WebApplication1.Controllers.ModuloCategoria
     {
         private ServicoCategoria servicoCategoria;
         private ServicoDespesa servicoDespesa;
-        public CategoriaController()
+        private IMapper mapeador;
+        public CategoriaController(ServicoCategoria servicoCategoria, ServicoDespesa servicoDespesa, IMapper mapeador)
         {
-            IConfiguration configuracao = new ConfigurationBuilder()
-              .SetBasePath(Directory.GetCurrentDirectory())
-              .AddJsonFile("appsettings.json")
-              .Build();
-
-            var connectionString = configuracao.GetConnectionString("SqlServer");
-
-            var builder = new DbContextOptionsBuilder<eAgendaDbContext>();
-
-            builder.UseSqlServer(connectionString);
-
-            var contextoPersistencia = new eAgendaDbContext(builder.Options);
-
-            var repositorioCategoria = new RepositorioCategoriaOrm(contextoPersistencia);
-            var repositorioDespesa = new RepositorioDespesaOrm(contextoPersistencia);
-
-            servicoCategoria = new ServicoCategoria(repositorioCategoria, contextoPersistencia);
-            servicoDespesa = new ServicoDespesa(repositorioDespesa, contextoPersistencia);
+            this.servicoCategoria = servicoCategoria;
+            this.servicoDespesa = servicoDespesa;
+            this.mapeador = mapeador;
         }
         [HttpGet]
         public List<ListarCategoriaViewModel> SelecionarTodos()
         {
             var categorias = servicoCategoria.SelecionarTodos().Value;
 
-            var categoriasViewModel = new List<ListarCategoriaViewModel>();
+            //var categoriasViewModel = new List<ListarCategoriaViewModel>();
 
-            foreach (var categoria in categorias)
-            {
-                var categoriaView = new ListarCategoriaViewModel(categoria.Titulo, categoria.Id);
+            //foreach (var categoria in categorias)
+            //{
+            //    var categoriaView = new ListarCategoriaViewModel(categoria.Titulo, categoria.Id);
 
-                categoriasViewModel.Add(categoriaView);
-            }
+            //    categoriasViewModel.Add(categoriaView);
+            //}
 
-            return categoriasViewModel;
+            //return categoriasViewModel;
+
+            return mapeador.Map<List<ListarCategoriaViewModel>>(categorias);
         }
 
         [HttpGet("{id}")]
@@ -79,7 +67,7 @@ namespace WebApplication1.Controllers.ModuloCategoria
         [HttpPost]
         public string Inserir(FormsCategoriaViewModel categoriaForm)
         {
-            var categoria = new Categoria(categoriaForm.Titulo);
+            var categoria = mapeador.Map<Categoria>(categoriaForm);
 
             var result = servicoCategoria.Inserir(categoria);
 
@@ -99,11 +87,11 @@ namespace WebApplication1.Controllers.ModuloCategoria
         [HttpPut("{id}")]
         public string Editar(Guid id, FormsCategoriaViewModel categoriaView)
         {
-            var categoria = servicoCategoria.SelecionarPorId(id).Value;
+            var categoriaEncontrada = servicoCategoria.SelecionarPorId(id).Value;
 
-            categoria.Titulo = categoriaView.Titulo;
+            var categoriaModificada = mapeador.Map(categoriaView, categoriaEncontrada);
 
-            var result = servicoCategoria.Editar(categoria);
+            var result = servicoCategoria.Editar(categoriaModificada);
 
             var erros = new List<string>();
 

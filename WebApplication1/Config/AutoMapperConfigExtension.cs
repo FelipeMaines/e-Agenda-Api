@@ -10,6 +10,9 @@ namespace WebApplication1.Config
             {
                 opt.AddProfile<ContatoProfile>();
                 opt.AddProfile<CompromissoProfile>();
+                opt.AddProfile<DespesaProfile>();
+                opt.AddProfile<CategoriaProfile>();
+                opt.AddProfile<TarefaProfile>();
             });
         }
     }

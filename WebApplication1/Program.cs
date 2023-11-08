@@ -19,6 +19,7 @@ using System.Text.Json.Serialization;
 using WebApplication1.Config.AutoMapperConfig;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Config;
+using Microsoft.AspNetCore.Mvc;
 
 namespace WebApplication1
 {
@@ -41,18 +42,23 @@ namespace WebApplication1
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            builder.Services.Configure<ApiBehaviorOptions>(config =>
+            {
+                config.SuppressModelStateInvalidFilter = true;
+            });
 
+            builder.Services.ConfigurarSerilog(builder.Logging);
             builder.Services.ConfigurarAutoMapper();
-
             builder.Services.ConfigurarInjecaoDependecia(builder.Configuration);
+            builder.Services.ConfigurarSwagger();
 
             builder.Services.AddControllers()
                 .AddJsonOptions(opt => opt.JsonSerializerOptions.Converters.Add(new TimeSpanToStringConverter()));
 
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
             builder.Services.AddEndpointsApiExplorer();
+
             builder.Services.AddSwaggerGen( c =>
             {
                 c.MapType<TimeSpan>(() => new OpenApiSchema
@@ -63,6 +69,8 @@ namespace WebApplication1
             });
 
             var app = builder.Build();
+
+            app.UseMiddleware<ManipuladorExcecoes>();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())

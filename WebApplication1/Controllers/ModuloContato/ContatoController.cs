@@ -4,6 +4,8 @@ using eAgenda.Dominio.ModuloCompromisso;
 using eAgenda.Dominio.ModuloContato;
 using eAgenda.Infra.Orm;
 using eAgenda.Infra.Orm.ModuloContato;
+using FluentResults;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Config.AutoMapperConfig;
@@ -17,103 +19,126 @@ namespace WebApplication1.Controllers
     {
         private ServicoContato servicoContato;
         private IMapper mapeador;
-        public ContatoController(ServicoContato servicoContato, IMapper mapeador)
+        private readonly ILogger<ContatoController> logger;
+        public ContatoController(ServicoContato servicoContato, IMapper mapeador, ILogger<ContatoController> logger)
         {
-            //IConfiguration configuracao = new ConfigurationBuilder()
-            //  .SetBasePath(Directory.GetCurrentDirectory())
-            //  .AddJsonFile("appsettings.json")
-            //  .Build();
-
-            //var connectionString = configuracao.GetConnectionString("SqlServer");
-
-            //var builder = new DbContextOptionsBuilder<eAgendaDbContext>();
-
-            //builder.UseSqlServer(connectionString);
-
-            //var contextoPersistencia = new eAgendaDbContext(builder.Options);
-
-            //var repositorioContato = new RepositorioContatoOrm(contextoPersistencia);
-
-            //servicoContato = new ServicoContato(repositorioContato, contextoPersistencia);
-
             this.servicoContato = servicoContato;
             this.mapeador = mapeador;
+            this.logger = logger;
         }
 
         [HttpGet]
-        public List<ListarContatoViewModel> SelecioarTodos(StatusFavoritoEnum status)
+        [ProducesResponseType(typeof(ListarContatoViewModel), 200)]
+        [ProducesResponseType(typeof(string[]), 500)]
+        public IActionResult SelecioarTodos(StatusFavoritoEnum status)
         {
+            logger.LogInformation("Selecionando todos os contatos!", status);
+
             var contatos = servicoContato.SelecionarTodos(status).Value;
 
-            return mapeador.Map<List<ListarContatoViewModel>>(contatos);
+            return Ok(new
+            {
+                Sucesso = true,
+                Dados = mapeador.Map<List<ListarContatoViewModel>>(contatos),
+                QtdRegistros = contatos.Count
+            });
         }
 
         [HttpGet("visualizacao-completa/{id}")]
-        public VisualizarContatoViewModel SelecionarPorId(Guid id)
+        [ProducesResponseType(typeof(VisualizarContatoViewModel), 200)]
+        [ProducesResponseType(typeof(string[]), 404)]
+        [ProducesResponseType(typeof(string[]), 500)]
+        public IActionResult SelecionarPorId(Guid id)
         {
-            var contato = servicoContato.SelecionarPorId(id).Value;
+            logger.LogInformation("Selecionando por Id", id);
 
-            var contatoViewModel = mapeador.Map<VisualizarContatoViewModel>(contato);
+            var contato = servicoContato.SelecionarPorId(id);
 
-            return contatoViewModel;
+            if (contato.IsFailed)
+                return NotFound(new
+                {
+                    Sucesso = false,
+                    Erros = contato.Errors.Select(x => x.Message)
+                });
+
+
+            return Ok(new
+            {
+                Sucesso = true,
+                Dados = mapeador.Map<VisualizarContatoViewModel>(contato)
+            });
         }
 
         [HttpPost]
-        public string Inserir(InserirContatoViewModel contatoViewModel)
+        [ProducesResponseType(typeof(InserirContatoViewModel), 201)]
+        [ProducesResponseType(typeof(string[]), 400)]
+        [ProducesResponseType(typeof(string[]), 404)]
+        [ProducesResponseType(typeof(string[]), 500)]
+
+        public IActionResult Inserir(InserirContatoViewModel contatoViewModel)
         {
             var contato = mapeador.Map<Contato>(contatoViewModel);
 
-            var resultado = servicoContato.Inserir(contato);
+            return ProcessarResultado(contato);
 
-            if(resultado.IsSuccess)
-                return "Contato inserido com sucesso!";
-
-            string[] erros = resultado.Errors.Select(x => x.Message).ToArray();
-            
-            return string.Join("\r\n ", erros);
         }
 
         [HttpPut("{id}")]
-        public string Editar(Guid id, InserirContatoViewModel contatoViewModel)
+        [ProducesResponseType(typeof(InserirContatoViewModel), 201)]
+        [ProducesResponseType(typeof(string[]), 400)]
+        [ProducesResponseType(typeof(string[]), 404)]
+        [ProducesResponseType(typeof(string[]), 500)]
+        public IActionResult Editar(Guid id, InserirContatoViewModel contatoViewModel)
         {
-            var contatoEncontrado = servicoContato.SelecionarPorId(id).Value;
+            
+            var resultadoSelecao = servicoContato.SelecionarPorId(id);
 
-            var contatoAlterado = mapeador.Map(contatoViewModel, contatoEncontrado);
+            if (resultadoSelecao.IsFailed)
+                return NotFound(new
+                {
+                    Sucesso = false,
+                    Erros = resultadoSelecao.Errors.Select(e => e.Message)
+                });
 
-            var resultado = servicoContato.Editar(contatoAlterado);
+            var contato = mapeador.Map(contatoViewModel, resultadoSelecao.Value);
 
-            if (resultado.IsSuccess)
-                return "Contato editado com sucesso!";
-
-            string[] erros = resultado.Errors.Select(x => x.Message).ToArray();
-
-            return string.Join("\r\n ", erros);
+            return ProcessarResultado(servicoContato.Editar(contato), contatoViewModel);
         }
 
         [HttpDelete]
-        public string Excluir(Guid id)
+        [ProducesResponseType(201)]
+        [ProducesResponseType(typeof(string[]), 400)]
+        [ProducesResponseType(typeof(string[]), 404)]
+        [ProducesResponseType(typeof(string[]), 500)]
+        public IActionResult Excluir(Guid id)
         {
+            
             var resultadoBusca = servicoContato.SelecionarPorId(id);
 
-            List<string> erros = new List<string>();
+            if (resultadoBusca.IsFailed)
+                return NotFound(new
+                {
+                    Sucesso = false,
+                    Erros = resultadoBusca.Errors.Select(x => x.Message)
+                });
 
-            if(resultadoBusca.IsFailed)
+            return ProcessarResultado(servicoContato.Excluir(resultadoBusca.Value));
+        }
+
+        private IActionResult ProcessarResultado(Result<Contato> contatoResult, InserirContatoViewModel contatoViewModel = null)
+        {
+            if (contatoResult.IsFailed)
+                return BadRequest(new
+                {
+                    Sucesso = false,
+                    Erros = contatoResult.Errors.Select(x => x.Message)
+                });
+
+            return Ok(new
             {
-                 erros = resultadoBusca.Errors.Select(x => x.Message).ToList();
-
-                return string.Join("\r\n ", erros);
-            }
-
-            var contato = resultadoBusca.Value;
-
-            var resultado = servicoContato.Excluir(contato);
-
-            if (resultado.IsSuccess)
-                return "Contato excluido com sucesso!";
-
-            erros = resultadoBusca.Errors.Select(x => x.Message).ToList();
-
-            return string.Join("\r\n ", erros);
+                Sucesso = true,
+                Dados = contatoViewModel
+            });
         }
     }
 }

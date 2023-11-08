@@ -21,6 +21,7 @@ namespace eAgenda.Dominio.ModuloDespesa
             Categorias = categorias;
         }
 
+
         public string Descricao { get; set; }
 
         public decimal Valor { get; set; }

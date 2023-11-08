@@ -22,28 +22,12 @@ namespace WebApplication1.Controllers.ModuloDespesa
     {
         private ServicoDespesa servicoDespesa;
         private ServicoCategoria servicoCategoria;
-        public DespesaController()
+        private IMapper mapeador;
+        public DespesaController(ServicoDespesa servicoDespesa, ServicoCategoria servicoCategoria, IMapper mapeador)
         {
-            IConfiguration configuracao = new ConfigurationBuilder()
-              .SetBasePath(Directory.GetCurrentDirectory())
-              .AddJsonFile("appsettings.json")
-              .Build();
-
-            var connectionString = configuracao.GetConnectionString("SqlServer");
-
-            var builder = new DbContextOptionsBuilder<eAgendaDbContext>();
-
-            builder.UseSqlServer(connectionString);
-
-            var contextoPersistencia = new eAgendaDbContext(builder.Options);
-
-            var repositorioDespesa = new RepositorioDespesaOrm(contextoPersistencia);
-
-            var repositorioCategoria = new RepositorioCategoriaOrm(contextoPersistencia);
-
-            servicoDespesa = new ServicoDespesa(repositorioDespesa, contextoPersistencia);
-
-            servicoCategoria = new ServicoCategoria(repositorioCategoria, contextoPersistencia);
+            this.servicoCategoria = servicoCategoria;
+            this.servicoDespesa = servicoDespesa;
+            this.mapeador = mapeador;
         }
 
         [HttpGet]
@@ -51,17 +35,7 @@ namespace WebApplication1.Controllers.ModuloDespesa
         {
             var despesas = servicoDespesa.SelecionarTodos().Value;
 
-            var despesasView = new List<ListarDespesaViewModel>();
-
-            foreach (var despesa in despesas)
-            {
-                var despesaViewModel = new ListarDespesaViewModel(despesa.Id, despesa.Descricao,
-                    despesa.Valor, despesa.Data, despesa.FormaPagamento);
-
-                despesasView.Add(despesaViewModel);
-            }
-
-            return despesasView;
+            return this.mapeador.Map<List<ListarDespesaViewModel>>(despesas);
         }
 
         [HttpGet("{id}")]
@@ -69,27 +43,13 @@ namespace WebApplication1.Controllers.ModuloDespesa
         {
             var despesa = servicoDespesa.SelecionarPorId(id).Value;
 
-            var categorias = new List<ListarCategoriaViewModel>();
-
-            foreach(var cate in despesa.Categorias)
-            {
-                categorias.Add(new ListarCategoriaViewModel(cate.Titulo, cate.Id));
-            }
-
-            var despesasView = new List<ListarDespesaViewModel>();
-
-            var despesView = new VisualizarDespesaViewModel(id,despesa.Descricao, despesa.Valor, despesa.Data,
-               despesa.FormaPagamento, categorias);
-
-            return despesView;
+            return mapeador.Map<VisualizarDespesaViewModel>(despesa);
         }
 
         [HttpPost]
        public string Inserir(FormsDespesaViewModel despesaView)
         {
-            List<Categoria> categorias = despesaView.Categorias.Select(id => servicoCategoria.SelecionarPorId(id).Value).ToList();
-
-            var despesa = new Despesa(despesaView.Descricao, despesaView.Valor, despesaView.Data, despesaView.FormaPagamento, categorias);
+            var despesa = mapeador.Map<Despesa>(despesaView);
 
             var result = servicoDespesa.Inserir(despesa);
 
@@ -110,13 +70,9 @@ namespace WebApplication1.Controllers.ModuloDespesa
         {
             var despesa = servicoDespesa.SelecionarPorId(id).Value;
 
-            despesa.Valor = despesaView.Valor;
-            despesa.Descricao = despesaView.Descricao;
-            despesa.FormaPagamento = despesaView.FormaPagamento;
-            despesa.Categorias = despesaView.Categorias.Select(id => servicoCategoria.SelecionarPorId(id).Value).ToList();
-            despesa.Data = despesaView.Data;
+            var despesaEditada = mapeador.Map(despesaView, despesa);
 
-            var result = servicoDespesa.Editar(despesa);
+            var result = servicoDespesa.Editar(despesaEditada);
 
             var erros = new List<string>();
 

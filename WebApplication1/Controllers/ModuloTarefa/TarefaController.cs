@@ -17,38 +17,20 @@ namespace WebApplication1.Controllers.ModuloTarefa
     public class TarefaController : ControllerBase
     {
         private ServicoTarefa servicoTarefa;
+        private IMapper mapeador;
 
-        public TarefaController()
+        public TarefaController(ServicoTarefa servicoTarefa, IMapper mapeador)
         {
-            IConfiguration configuracao = new ConfigurationBuilder()
-              .SetBasePath(Directory.GetCurrentDirectory())
-              .AddJsonFile("appsettings.json")
-              .Build();
-
-            var connectionString = configuracao.GetConnectionString("SqlServer");
-
-            var builder = new DbContextOptionsBuilder<eAgendaDbContext>();
-
-            builder.UseSqlServer(connectionString);
-
-            var contextoPersistencia = new eAgendaDbContext(builder.Options);
-
-            var repositorioTarefa = new RepositorioTarefaOrm(contextoPersistencia);
-
-            servicoTarefa = new ServicoTarefa(repositorioTarefa, contextoPersistencia);
+            this.mapeador = mapeador;
+            this.servicoTarefa = servicoTarefa;
         }
 
         [HttpGet]
-        public List<ListarTarefaViewModel> teste()
+        public List<ListarTarefaViewModel> SelecionarTodos()
         {
-            var tarefa = servicoTarefa.SelecionarTodos(StatusTarefaEnum.Pendentes).Value;
+            var tarefas = servicoTarefa.SelecionarTodos(StatusTarefaEnum.Pendentes).Value;
 
-            var tarefasViewModels = new List<ListarTarefaViewModel>();
-
-            foreach (var item in tarefa)
-                tarefasViewModels.Add(new ListarTarefaViewModel(item.Id, item.Titulo, item.Prioridade, item.DataCriacao, item.DataConclusao, item.PercentualConcluido));
-
-            return tarefasViewModels;
+            return mapeador.Map<List<ListarTarefaViewModel>>(tarefas);
         }
 
         [HttpGet("{id}")]
@@ -56,29 +38,22 @@ namespace WebApplication1.Controllers.ModuloTarefa
         {
             var tarefa = servicoTarefa.SelecionarPorId(id).Value;
 
-            var itens = new List<ListarItensViewModel>();
+            //var itens = new List<ListarItensViewModel>();
 
-            foreach (var item in tarefa.Itens)
-                itens.Add(new ListarItensViewModel(item.Id, item.Titulo, item.Concluido));
+            //foreach (var item in tarefa.Itens)
+            //    itens.Add(new ListarItensViewModel(item.Id, item.Titulo, item.Concluido));
 
-            return new VisualizarTarefaViewModel(tarefa.Id, tarefa.Titulo, tarefa.Prioridade, tarefa.DataCriacao, tarefa.DataConclusao, tarefa.PercentualConcluido, itens);
+            return mapeador.Map<VisualizarTarefaViewModel>(tarefa);
         }
 
         [HttpPost]
         public string Inserir(FormTarefaViewModel tarefaForm)
         {
-            var itens = new List<ItemTarefa>();
-
-            foreach (var item in tarefaForm.itens)
-            {
-                itens.Add(new ItemTarefa(item.Titulo));
-            }
-
-            var tarefa = new Tarefa(itens, tarefaForm.Titulo, tarefaForm.Prioridade);
-
-            var erros = new List<string>();
+            var tarefa = mapeador.Map<Tarefa>(tarefaForm);
 
             var result = servicoTarefa.Inserir(tarefa);
+
+            var erros = new List<string>();
 
             if (result.IsFailed)
             {
@@ -95,18 +70,9 @@ namespace WebApplication1.Controllers.ModuloTarefa
         {
             var tarefa = servicoTarefa.SelecionarPorId(id).Value;
 
-            var items = new List<ItemTarefa>();
-
-            foreach(var item in tarefaForm.itens)
-            {
-                items.Add(new ItemTarefa(item.Titulo));
-            }
-
-            tarefa.Atualizar(new Tarefa(items, tarefaForm.Titulo, tarefaForm.Prioridade));
+            var result = servicoTarefa.Editar(mapeador.Map(tarefaForm, tarefa));
 
             var erros = new List<string>();
-
-            var result = servicoTarefa.Editar(tarefa);
 
             if (result.IsFailed)
             {
