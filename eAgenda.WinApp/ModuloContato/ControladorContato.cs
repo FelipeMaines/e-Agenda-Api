@@ -108,9 +108,9 @@ namespace eAgenda.WinApp.ModuloContato
             return servicoContato.SelecionarPorId(numero).Value;
         }
 
-        private void CarregarContatos()
+        private async void CarregarContatos()
         {
-            List<Contato> contatos = servicoContato.SelecionarTodos(StatusFavoritoEnum.Todos).Value;
+            List<Contato> contatos = await servicoContato.SelecionarTodos(StatusFavoritoEnum.Todos);
 
             tabelaContatos.AtualizarRegistros(contatos);
 

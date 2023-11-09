@@ -20,6 +20,7 @@ using WebApplication1.Config.AutoMapperConfig;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Config;
 using Microsoft.AspNetCore.Mvc;
+using WebApplication1.Filters;
 
 namespace WebApplication1
 {
@@ -54,6 +55,11 @@ namespace WebApplication1
 
             builder.Services.AddControllers()
                 .AddJsonOptions(opt => opt.JsonSerializerOptions.Converters.Add(new TimeSpanToStringConverter()));
+
+            builder.Services.AddControllers(config =>
+            {
+                config.Filters.Add<SerilogActionFilter>();
+            });
 
             builder.Services.AddControllers();
 

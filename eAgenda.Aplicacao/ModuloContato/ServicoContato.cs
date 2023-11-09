@@ -4,6 +4,7 @@ using FluentResults;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace eAgenda.Aplicacao.ModuloContato
 {
@@ -19,10 +20,8 @@ namespace eAgenda.Aplicacao.ModuloContato
             this.contextoPersistencia = contexto;
         }
 
-        public Result<Contato> Inserir(Contato contato)
+        public async Task<Result<Contato>> Inserir(Contato contato)
         {
-            Log.Logger.Debug("Tentando inserir contato... {@c}", contato);
-
             Result resultado = Validar(contato);
 
             if (resultado.IsFailed)
@@ -32,9 +31,7 @@ namespace eAgenda.Aplicacao.ModuloContato
             {
                 repositorioContato.Inserir(contato);
 
-                contextoPersistencia.GravarDados();
-
-                Log.Logger.Information("Contato {ContatoId} inserido com sucesso", contato.Id);
+                await contextoPersistencia.GravarDadosAsync();
 
                 return Result.Ok(contato);
             }
@@ -44,13 +41,11 @@ namespace eAgenda.Aplicacao.ModuloContato
 
                 string msgErro = "Falha no sistema ao tentar inserir o Contato";
 
-                Log.Logger.Error(ex, msgErro + " {ContatoId} ", contato.Id);
-
-                return Result.Fail(msgErro);
+                throw new Exception(msgErro, ex);
             }
         }
 
-        public Result<Contato> Editar(Contato contato)
+        public async Task<Result<Contato>> Editar(Contato contato)
         {
             Log.Logger.Debug("Tentando editar contato... {@c}", contato);
 
@@ -63,7 +58,7 @@ namespace eAgenda.Aplicacao.ModuloContato
             {
                 repositorioContato.Editar(contato);
 
-                contextoPersistencia.GravarDados();
+                await contextoPersistencia.GravarDadosAsync();
 
                 Log.Logger.Information("Contato {ContatoId} editado com sucesso", contato.Id);
             }
@@ -81,17 +76,9 @@ namespace eAgenda.Aplicacao.ModuloContato
             return Result.Ok(contato);
         }
 
-        public Result Excluir(Guid id)
-        {
-            var contatoResult = SelecionarPorId(id);
+      
 
-            if (contatoResult.IsSuccess)
-                return Excluir(contatoResult.Value);
-
-            return Result.Fail(contatoResult.Errors);
-        }
-
-        public Result Excluir(Contato contato)
+        public async Task<Result> Excluir(Contato contato)
         {
             Log.Logger.Debug("Tentando excluir contato... {@c}", contato);
 
@@ -99,7 +86,7 @@ namespace eAgenda.Aplicacao.ModuloContato
             {
                 repositorioContato.Excluir(contato);
 
-                contextoPersistencia.GravarDados();
+                 await contextoPersistencia.GravarDadosAsync();
 
                 Log.Logger.Information("Contato {ContatoId} editado com sucesso", contato.Id);
 
@@ -117,55 +104,25 @@ namespace eAgenda.Aplicacao.ModuloContato
             }
         }
 
-        public Result<List<Contato>> SelecionarTodos(StatusFavoritoEnum statusFavorito)
+        public async Task<Result<List<Contato>>> SelecionarTodos(StatusFavoritoEnum statusFavorito)
         {
-            Log.Logger.Debug("Tentando selecionar contatos...");
+            var contatos = await repositorioContato.SelecionarTodosAsync(statusFavorito);
 
-            try
-            {
-                var contatos = repositorioContato.SelecionarTodos(statusFavorito);
-
-                Log.Logger.Information("Contatos selecionados com sucesso");
-
-                return Result.Ok(contatos);
-            }
-            catch (Exception ex)
-            {
-                string msgErro = "Falha no sistema ao tentar selecionar todos os Contatos";
-
-                Log.Logger.Error(ex, msgErro);
-
-                return Result.Fail(msgErro);
-            }
+            return Result.Ok(contatos);
         }
 
         public Result<Contato> SelecionarPorId(Guid id)
         {
-            Log.Logger.Debug("Tentando selecionar contato {ContatoId}...", id);
+            var contato = repositorioContato.SelecionarPorId(id);
 
-            try
+            if (contato == null)
             {
-                var contato = repositorioContato.SelecionarPorId(id);
+                Log.Logger.Warning("Contato {ContatoId} não encontrado", id);
 
-                if (contato == null)
-                {
-                    Log.Logger.Warning("Contato {ContatoId} não encontrado", id);
-
-                    return Result.Fail("Contato não encontrado");
-                }
-
-                Log.Logger.Information("Contato {ContatoId} selecionado com sucesso", id);
-
-                return Result.Ok(contato);
+                return Result.Fail($"Contato {id} não encontrado");
             }
-            catch (Exception ex)
-            {
-                string msgErro = "Falha no sistema ao tentar selecionar o Contato";
 
-                Log.Logger.Error(ex, msgErro + " {ContatoId}", id);
-
-                return Result.Fail(msgErro);
-            }
+            return Result.Ok(contato);
         }
 
         public Result<Contato> ConfigurarFavoritos(Contato contato)

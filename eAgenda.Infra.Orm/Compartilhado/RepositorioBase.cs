@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace eAgenda.Infra.Orm.Compartilhado
 {
@@ -43,6 +44,11 @@ namespace eAgenda.Infra.Orm.Compartilhado
         public virtual List<TEntity> SelecionarTodos()
         {
             return registros.ToList();
+        }
+
+        public async virtual Task<List<TEntity>> SelecionarTodosAsyinc()
+        {
+            return await registros.ToListAsync();
         }
     }
 }

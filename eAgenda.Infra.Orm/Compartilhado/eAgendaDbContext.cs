@@ -6,6 +6,7 @@ using Serilog;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace eAgenda.Infra.Orm
 {
@@ -14,11 +15,17 @@ namespace eAgenda.Infra.Orm
        
         public eAgendaDbContext(DbContextOptions options) : base(options)
         {          
-        }    
+        }
 
         public void GravarDados()
         {
             SaveChanges();
+        }
+        public async Task<bool> GravarDadosAsync()
+        {
+            int registrosAfetados = await SaveChangesAsync();
+
+            return registrosAfetados > 0;
         }
 
         public void DesfazerAlteracoes()

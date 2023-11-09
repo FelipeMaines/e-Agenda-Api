@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace eAgenda.Infra.Orm.ModuloContato
 {
@@ -36,6 +37,22 @@ namespace eAgenda.Infra.Orm.ModuloContato
                 return registros
                    .Where(x => x.Favorito == false)                   
                    .ToList();            
+        }
+
+        public async Task<List<Contato>> SelecionarTodosAsync(StatusFavoritoEnum statusFavorito)
+        {
+            if (statusFavorito == StatusFavoritoEnum.Todos)
+                return await registros
+                    .ToListAsync();
+
+            else if (statusFavorito == StatusFavoritoEnum.Sim)
+                return await registros
+                    .Where(x => x.Favorito == true)
+                    .ToListAsync();
+            else
+                return await registros
+                   .Where(x => x.Favorito == false)
+                   .ToListAsync();
         }
     }
 }
